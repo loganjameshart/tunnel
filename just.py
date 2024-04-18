@@ -34,10 +34,8 @@ def publish():
 
 
 def main():
-    s = socket.socket()
-    s.bind(('127.0.0.1', 9999))
-    s.listen()
-    conn, addr = s.accept()
+    conn = socket.socket()
+    conn.connect(('127.0.0.1', 9999))
 
     while True:
         cmd = conn.recv(4096).decode()
